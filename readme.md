@@ -13,16 +13,8 @@ Cakes API provide user to create, read, update and delete cakes from the databas
 ## Installing and Running
 
 ### Locally:
-
-1.
-
 ```bash
 $ go mod tidy
-```
-
-2.
-
-```bash
 $ go run cmd/main.go
 ```
 
