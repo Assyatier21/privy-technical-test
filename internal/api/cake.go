@@ -31,7 +31,7 @@ func GetListOfCakes(c echo.Context) (err error) {
 
 	err = repository.GetListOfCakes(c, limit, offset)
 	if err != nil {
-		log.Println("[Delivery] can't get list of cakes, err:", err.Error())
+		log.Println("[Delivery][GetListOfCakes] can't get list of cakes, err:", err.Error())
 	}
 
 	return
@@ -50,7 +50,7 @@ func GetDetailsOfCake(c echo.Context) (err error) {
 
 	err = repository.GetDetailsOfCake(c, id)
 	if err != nil {
-		log.Println("[Delivery] can't get details of cakes, err:", err.Error())
+		log.Println("[Delivery][GetDetailsOfCake] can't get details of cakes, err:", err.Error())
 	}
 
 	return
@@ -94,7 +94,7 @@ func InsertCake(c echo.Context) (err error) {
 
 	err = repository.InsertCake(c, title, description, rating, image)
 	if err != nil {
-		log.Println("[Delivery] can't insert cake, err:", err.Error())
+		log.Println("[Delivery][InsertCake] can't insert cake, err:", err.Error())
 	}
 
 	return
@@ -115,8 +115,11 @@ func UpdateCake(c echo.Context) (err error) {
 		id, _ = strconv.ParseInt(c.Param("id"), 10, 64)
 	}
 
-	if !utils.IsValidAlphaNumericHyphen(c.FormValue("title")) {
+	if c.FormValue("title") == "" {
 		title = ""
+	} else if !utils.IsValidAlphaNumericHyphen(c.FormValue("title")) {
+		res := m.SetResponse(http.StatusBadRequest, "title only accept alphanumeric and hypen", nil)
+		return c.JSON(http.StatusOK, res)
 	} else {
 		title = c.FormValue("title")
 	}
@@ -128,8 +131,11 @@ func UpdateCake(c echo.Context) (err error) {
 
 	}
 
-	if !utils.IsValidFloatNumber(c.FormValue("rating")) {
-		rating = 0
+	if c.FormValue("rating") == "" {
+		rating = -9999.9999
+	} else if !utils.IsValidFloatNumber(c.FormValue("rating")) {
+		res := m.SetResponse(http.StatusBadRequest, "rating only accept float number", nil)
+		return c.JSON(http.StatusOK, res)
 	} else {
 		temp, _ := strconv.ParseFloat(c.FormValue("rating"), 32)
 		rating = float32(temp)
@@ -137,18 +143,21 @@ func UpdateCake(c echo.Context) (err error) {
 
 	if !utils.IsValidLinkImage(c.FormValue("image")) {
 		image = ""
+	} else if !utils.IsValidLinkImage(c.FormValue("image")) {
+		res := m.SetResponse(http.StatusBadRequest, "image format is wrong", nil)
+		return c.JSON(http.StatusOK, res)
 	} else {
 		image = c.FormValue("image")
 	}
 
 	err = repository.UpdateCake(c, id, title, description, rating, image)
 	if err != nil {
-		log.Println("[Delivery] can't update cake, err:", err.Error())
+		log.Println("[Delivery][UpdateCake] can't update cake, err:", err.Error())
 	}
 
 	return
 }
-func DeleteCake(c echo.Context) (err error){
+func DeleteCake(c echo.Context) (err error) {
 	var (
 		id int
 	)
@@ -162,7 +171,7 @@ func DeleteCake(c echo.Context) (err error){
 
 	err = repository.DeleteCake(c, id)
 	if err != nil {
-		log.Println("[Delivery] can't get details of cakes, err:", err.Error())
+		log.Println("[Delivery][DeleteCake] can't get details of cakes, err:", err.Error())
 	}
 
 	return

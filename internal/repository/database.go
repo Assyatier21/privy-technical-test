@@ -53,7 +53,7 @@ func GetDetailsOfCake(c echo.Context, id int) (err error) {
 	query := fmt.Sprintf(database.GetDetailsOfCakeByID, id)
 	err = config.DB.QueryRow(query).Scan(&cake.Id, &cake.Title, &cake.Description, &cake.Rating, &cake.Image, &cake.CreatedAt, &cake.UpdatedAt)
 	if err != nil {
-		log.Println("[GetListOfCakes] can't get details of cakes, err:", err.Error())
+		log.Println("[GetDetailsOfCake] can't get details of cakes, err:", err.Error())
 		res := m.SetResponse(http.StatusOK, "no data found", data)
 		return c.JSON(http.StatusOK, res)
 	}
@@ -114,7 +114,12 @@ func UpdateCake(c echo.Context, id int64, title string, description string, rati
 	currentTime := time.Now().String()
 
 	query := fmt.Sprintf(database.GetDetailsOfCakeByID, id)
-	_ = config.DB.QueryRow(query).Scan(&cakeTemp.Id, &cakeTemp.Title, &cakeTemp.Description, &cakeTemp.Rating, &cakeTemp.Image, &cakeTemp.CreatedAt, &cakeTemp.UpdatedAt)
+	err = config.DB.QueryRow(query).Scan(&cakeTemp.Id, &cakeTemp.Title, &cakeTemp.Description, &cakeTemp.Rating, &cakeTemp.Image, &cakeTemp.CreatedAt, &cakeTemp.UpdatedAt)
+	if err != nil {
+		log.Println("[UpdateCake] can't update cake, err:", err.Error())
+		res := m.SetResponse(http.StatusBadRequest, "failed to update cake, no data found", []interface{}{})
+		return c.JSON(http.StatusOK, res)
+	}
 
 	if title == "" {
 		title = cakeTemp.Title
@@ -122,7 +127,7 @@ func UpdateCake(c echo.Context, id int64, title string, description string, rati
 	if description == "" {
 		description = cakeTemp.Description
 	}
-	if rating == 0 {
+	if rating == -9999.9999 {
 		rating = cake.Rating
 	}
 	if image == "" {
@@ -138,7 +143,7 @@ func UpdateCake(c echo.Context, id int64, title string, description string, rati
 	rows, err := config.DB.Exec(query)
 	if err != nil {
 		log.Println("[UpdateCake] can't update cake, err:", err.Error())
-		res := m.SetResponse(http.StatusBadRequest, "failed to insert article", []interface{}{})
+		res := m.SetResponse(http.StatusBadRequest, "failed to update cake", []interface{}{})
 		return c.JSON(http.StatusOK, res)
 	}
 
@@ -170,7 +175,7 @@ func DeleteCake(c echo.Context, id int) (err error) {
 		res := m.SetResponse(http.StatusOK, "success", data)
 		return c.JSON(http.StatusOK, res)
 	} else {
-		log.Println("[DeleteCake] can't delete cakes, err:", err.Error())
+		log.Println("[DeleteCake] can't delete cake, err:", err.Error())
 		res := m.SetResponse(http.StatusOK, "no data found", data)
 		return c.JSON(http.StatusOK, res)
 
