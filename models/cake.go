@@ -9,3 +9,7 @@ type Cake struct {
 	CreatedAt   string  `json:"created_at" form:"created_at"`
 	UpdatedAt   string  `json:"updated_at" form:"updated_at"`
 }
+
+type Error struct {
+	ErrorMessage string `json:"error_message"`
+}

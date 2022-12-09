@@ -1,6 +1,6 @@
 package models
 
 const (
-	Addres = "0.0.0.0"
+	Addres = "127.0.0.1"
 	Port   = "8800"
 )
