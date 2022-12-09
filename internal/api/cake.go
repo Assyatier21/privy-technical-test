@@ -61,7 +61,7 @@ func (h *handler) GetDetailsOfCake(c echo.Context) (err error) {
 
 	if !utils.IsValidNumeric(c.Param("id")) {
 		res := m.SetResponse(http.StatusBadRequest, "id only accept number or can't be empty", nil)
-		return c.JSON(http.StatusOK, res)
+		return c.JSON(http.StatusBadRequest, res)
 	} else {
 		id, _ = strconv.Atoi(c.Param("id"))
 	}

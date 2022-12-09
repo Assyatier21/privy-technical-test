@@ -250,6 +250,7 @@ func Test_handler_GetDetailsOfCake(t *testing.T) {
 	type args struct {
 		method string
 		path   string
+		id     string
 	}
 	type wants struct {
 		statusCode int
@@ -264,23 +265,55 @@ func Test_handler_GetDetailsOfCake(t *testing.T) {
 			name: "Success",
 			args: args{
 				method: http.MethodGet,
-				path:   "/cakes/1",
+				path:   "/cakes",
+				id:     "1",
 			},
 			wants: wants{
 				statusCode: http.StatusOK,
 			},
 			mock: func() {
-				mockRepository.EXPECT().GetDetailsOfCake(gomock.Any(), uint32(1)).
+				mockRepository.EXPECT().GetDetailsOfCake(gomock.Any(), 1).
 					Return(m.Cake{Id: 1, Title: "title", Description: "description", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
+			},
+		},
+		{
+			name: "id not valid",
+			args: args{
+				method: http.MethodGet,
+				path:   "/cakes",
+				id:     "abc",
+			},
+			wants: wants{
+				statusCode: http.StatusBadRequest,
+			},
+			mock: func() {},
+		},
+		{
+			name: "repository error",
+			args: args{
+				method: http.MethodGet,
+				path:   "/cakes",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusInternalServerError,
+			},
+			mock: func() {
+				mockRepository.EXPECT().GetDetailsOfCake(gomock.Any(), 1).
+					Return(m.Cake{Id: 1, Title: "title", Description: "description", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, errors.New("Repository Error"))
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
-			req := httptest.NewRequest(tt.args.method, tt.args.path, nil)
+			req := httptest.NewRequest("GET", "/", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
+
+			c.SetPath("/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.args.id)
 
 			tt.mock()
 
