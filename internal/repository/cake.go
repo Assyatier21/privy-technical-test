@@ -107,12 +107,9 @@ func (r *repository) UpdateCake(ctx context.Context, cake m.Cake) (m.Cake, error
 
 	query := fmt.Sprintf(database.GetDetailsOfCakeByID, cake.Id)
 	err = r.db.QueryRow(query).Scan(&cakeTemp.Id, &cakeTemp.Title, &cakeTemp.Description, &cakeTemp.Rating, &cakeTemp.Image, &cakeTemp.CreatedAt, &cakeTemp.UpdatedAt)
-	if err == sql.ErrNoRows {
+	if err != nil {
 		log.Println("[UpdateCake] can't update cake, err:", err.Error())
 		return m.Cake{}, ErrNotFound
-	} else if err != nil {
-		log.Println("[UpdateCake] can't update cake, err:", err.Error())
-		return m.Cake{}, nil
 	}
 
 	if cake.Title == "" {

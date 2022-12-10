@@ -294,6 +294,205 @@ func Test_repository_InsertCake(t *testing.T) {
 		})
 	}
 }
+func Test_repository_UpdateCake(t *testing.T) {
+	ctx := context.Background()
+	ct := time.Now()
+	currentTime := fmt.Sprintf("%d-%d-%d %d:%d:%d", ct.Year(), ct.Month(), ct.Day(), ct.Hour(), ct.Minute(), ct.Second())
+
+	db, sqlMock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	type args struct {
+		ctx  context.Context
+		cake m.Cake
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    m.Cake
+		wantErr bool
+		mock    func()
+	}{
+		{
+			name: "Success",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "newtitle",
+					Description: "newdesc",
+					Rating:      10,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   "2022-12-01 20:29:00",
+					UpdatedAt:   "2022-12-01 20:29:00",
+				},
+			},
+			want:    m.Cake{Id: 1, Title: "newtitle", Description: "newdesc", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", CreatedAt: "2022-12-01 20:29:00", UpdatedAt: currentTime},
+			wantErr: false,
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "title", "description", "rating", "image", "created_at", "updated_at"}).
+					AddRow(1, "title", "description", 10, "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", "2022-12-01 20:29:00", "2022-12-01 20:29:00")
+				sqlMock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM privy_cakes`)).WillReturnRows(rows)
+				sqlMock.ExpectExec("UPDATE privy_cakes").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+		},
+		{
+			name: "Success With Empty Title",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "",
+					Description: "newdesc",
+					Rating:      10,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   "2022-12-01 20:29:00",
+					UpdatedAt:   "2022-12-01 20:29:00",
+				},
+			},
+			want:    m.Cake{Id: 1, Title: "title", Description: "newdesc", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", CreatedAt: "2022-12-01 20:29:00", UpdatedAt: currentTime},
+			wantErr: false,
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "title", "description", "rating", "image", "created_at", "updated_at"}).
+					AddRow(1, "title", "description", 10, "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", "2022-12-01 20:29:00", "2022-12-01 20:29:00")
+				sqlMock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM privy_cakes`)).WillReturnRows(rows)
+				sqlMock.ExpectExec("UPDATE privy_cakes").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+		},
+		{
+			name: "Success With Empty Desc",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "newtitle",
+					Description: "",
+					Rating:      10,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   "2022-12-01 20:29:00",
+					UpdatedAt:   "2022-12-01 20:29:00",
+				},
+			},
+			want:    m.Cake{Id: 1, Title: "newtitle", Description: "description", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", CreatedAt: "2022-12-01 20:29:00", UpdatedAt: currentTime},
+			wantErr: false,
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "title", "description", "rating", "image", "created_at", "updated_at"}).
+					AddRow(1, "title", "description", 10, "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", "2022-12-01 20:29:00", "2022-12-01 20:29:00")
+				sqlMock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM privy_cakes`)).WillReturnRows(rows)
+				sqlMock.ExpectExec("UPDATE privy_cakes").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+		},
+		{
+			name: "Success With Empty Rating",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "newtitle",
+					Description: "newdesc",
+					Rating:      0,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   "2022-12-01 20:29:00",
+					UpdatedAt:   "2022-12-01 20:29:00",
+				},
+			},
+			want:    m.Cake{Id: 1, Title: "newtitle", Description: "newdesc", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", CreatedAt: "2022-12-01 20:29:00", UpdatedAt: currentTime},
+			wantErr: false,
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "title", "description", "rating", "image", "created_at", "updated_at"}).
+					AddRow(1, "title", "description", 10, "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", "2022-12-01 20:29:00", "2022-12-01 20:29:00")
+				sqlMock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM privy_cakes`)).WillReturnRows(rows)
+				sqlMock.ExpectExec("UPDATE privy_cakes").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+		},
+		{
+			name: "Success With Empty Image",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "newtitle",
+					Description: "newdesc",
+					Rating:      10,
+					Image:       "",
+					CreatedAt:   "2022-12-01 20:29:00",
+					UpdatedAt:   "2022-12-01 20:29:00",
+				},
+			},
+			want:    m.Cake{Id: 1, Title: "newtitle", Description: "newdesc", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", CreatedAt: "2022-12-01 20:29:00", UpdatedAt: currentTime},
+			wantErr: false,
+			mock: func() {
+				rows := sqlmock.NewRows([]string{"id", "title", "description", "rating", "image", "created_at", "updated_at"}).
+					AddRow(1, "title", "description", 10, "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", "2022-12-01 20:29:00", "2022-12-01 20:29:00")
+				sqlMock.ExpectQuery(regexp.QuoteMeta(`SELECT * FROM privy_cakes`)).WillReturnRows(rows)
+				sqlMock.ExpectExec("UPDATE privy_cakes").WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+		},
+		{
+			name: "wrong select query",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "newtitle",
+					Description: "newdesc",
+					Rating:      10,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   "2022-12-01 20:29:00",
+					UpdatedAt:   "2022-12-01 20:29:00",
+				},
+			},
+			want:    m.Cake{},
+			wantErr: true,
+			mock: func() {
+				sqlMock.ExpectQuery(regexp.QuoteMeta(`SELECTTT *  FROM privy_cakes`)).WillReturnError(errors.New("query error"))
+			},
+		},
+		{
+			name: "wrong update query",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "newtitle",
+					Description: "newdesc",
+					Rating:      10,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   "2022-12-01 20:29:00",
+					UpdatedAt:   "2022-12-01 20:29:00",
+				},
+			},
+			want:    m.Cake{},
+			wantErr: true,
+			mock: func() {
+				sqlMock.ExpectQuery(regexp.QuoteMeta(`SELECTTT *  FROM privy_cakes`)).WillReturnError(errors.New("query error"))
+				sqlMock.ExpectExec("UPDATE XYZ privy_cakes").WillReturnError(errors.New("query error"))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Run(tt.name, func(t *testing.T) {
+				tt.mock()
+
+				r := &repository{
+					db: db,
+				}
+				got, err := r.UpdateCake(tt.args.ctx, tt.args.cake)
+				if (err != nil) != tt.wantErr {
+					t.Errorf("repository.UpdateCake() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("repository.UpdateCake() = %v, want %v", got, tt.want)
+				}
+			})
+		})
+	}
+}
 func Test_repository_DeleteCake(t *testing.T) {
 	ctx := context.Background()
 
@@ -349,7 +548,7 @@ func Test_repository_DeleteCake(t *testing.T) {
 			mock: func() {
 				sqlMock.ExpectExec(`DELETE FROM privy_cakes`).
 					WillDelayFor(time.Second).
-					WillReturnResult(sqlmock.NewResult(int64(2), int64(0)))
+					WillReturnResult(sqlmock.NewResult(int64(1), int64(0)))
 			},
 		},
 	}
