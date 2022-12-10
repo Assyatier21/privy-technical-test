@@ -28,6 +28,6 @@ func IsValidFloatNumber(s string) bool {
 }
 
 func IsValidLinkImage(s string) bool {
-	regex, _ := regexp.Compile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)`)
+	regex, _ := regexp.Compile(`(http)?s?:?(\/\/[^"']*\.(?:png|jpg|jpeg|gif|png|svg))`)
 	return regex.MatchString(s)
 }

@@ -28,7 +28,6 @@ func New(repository repository.Repository) Handler {
 		repository: repository,
 	}
 }
-
 func (h *handler) GetListOfCakes(c echo.Context) (err error) {
 	var (
 		limit  int
@@ -53,7 +52,6 @@ func (h *handler) GetListOfCakes(c echo.Context) (err error) {
 
 	return c.JSON(http.StatusOK, cakes)
 }
-
 func (h *handler) GetDetailsOfCake(c echo.Context) (err error) {
 	var (
 		id int
@@ -74,7 +72,6 @@ func (h *handler) GetDetailsOfCake(c echo.Context) (err error) {
 
 	return c.JSON(http.StatusOK, cake)
 }
-
 func (h *handler) InsertCake(c echo.Context) (err error) {
 	var (
 		cake m.Cake
@@ -106,7 +103,6 @@ func (h *handler) InsertCake(c echo.Context) (err error) {
 
 	return c.JSON(http.StatusOK, returnCake)
 }
-
 func (h *handler) UpdateCake(c echo.Context) (err error) {
 	var (
 		cake m.Cake
@@ -116,23 +112,29 @@ func (h *handler) UpdateCake(c echo.Context) (err error) {
 		return c.JSON(http.StatusBadRequest, m.Error{ErrorMessage: "id only accept number or can't be empty"})
 	}
 
-	if !utils.IsValidAlphaNumericHyphen(c.FormValue("title")) {
+	if c.FormValue("title") == "" {
+		cake.Title = ""
+	} else if !utils.IsValidAlphaNumericHyphen(c.FormValue("title")) {
 		return c.JSON(http.StatusBadRequest, m.Error{ErrorMessage: "title only accept alphanumeric and hypen"})
 	}
 
-	if !utils.IsValidFloatNumber(c.FormValue("rating")) {
+	if c.FormValue("description") == "" {
+		cake.Description = ""
+	}
+
+	if c.FormValue("rating") == "" {
+		cake.Rating = 0
+	} else if !utils.IsValidFloatNumber(c.FormValue("rating")) {
 		return c.JSON(http.StatusBadRequest, m.Error{ErrorMessage: "rating only accept float number"})
 	}
 
-	if !utils.IsValidLinkImage(c.FormValue("image")) {
+	if c.FormValue("image") == "" {
+		cake.Image = ""
+	} else if !utils.IsValidLinkImage(c.FormValue("image")) {
 		return c.JSON(http.StatusBadRequest, m.Error{ErrorMessage: "image format is wrong"})
 	}
 
 	c.Bind(&cake)
-
-	if c.FormValue("rating") == "" {
-		cake.Rating = -9999.9999
-	}
 
 	returnCake, err := h.repository.UpdateCake(c.Request().Context(), cake)
 	if err != nil {
@@ -142,7 +144,6 @@ func (h *handler) UpdateCake(c echo.Context) (err error) {
 
 	return c.JSON(http.StatusOK, returnCake)
 }
-
 func (h *handler) DeleteCake(c echo.Context) (err error) {
 	var (
 		id int

@@ -44,7 +44,6 @@ func TestNew(t *testing.T) {
 		})
 	}
 }
-
 func Test_handler_GetListOfCakes(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepository := mock_repo.NewMockRepository(ctrl)
@@ -133,7 +132,91 @@ func Test_handler_GetListOfCakes(t *testing.T) {
 		})
 	}
 }
+func Test_handler_GetDetailsOfCake(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockRepository := mock_repo.NewMockRepository(ctrl)
 
+	type args struct {
+		method string
+		path   string
+		id     string
+	}
+	type wants struct {
+		statusCode int
+	}
+	tests := []struct {
+		name  string
+		args  args
+		wants wants
+		mock  func()
+	}{
+		{
+			name: "Success",
+			args: args{
+				method: http.MethodGet,
+				path:   "/cakes",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusOK,
+			},
+			mock: func() {
+				mockRepository.EXPECT().GetDetailsOfCake(gomock.Any(), 1).
+					Return(m.Cake{Id: 1, Title: "title", Description: "description", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
+			},
+		},
+		{
+			name: "id not valid",
+			args: args{
+				method: http.MethodGet,
+				path:   "/cakes",
+				id:     "abc",
+			},
+			wants: wants{
+				statusCode: http.StatusBadRequest,
+			},
+			mock: func() {},
+		},
+		{
+			name: "repository error",
+			args: args{
+				method: http.MethodGet,
+				path:   "/cakes",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusInternalServerError,
+			},
+			mock: func() {
+				mockRepository.EXPECT().GetDetailsOfCake(gomock.Any(), 1).
+					Return(m.Cake{Id: 1, Title: "title", Description: "description", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, errors.New("Repository Error"))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := echo.New()
+			req := httptest.NewRequest("GET", "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			c.SetPath("/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.args.id)
+
+			tt.mock()
+
+			h := &handler{
+				repository: mockRepository,
+			}
+			if err := h.GetDetailsOfCake(c); err != nil {
+				t.Errorf("handler.GetListOfCakes() error = %v", err)
+			}
+
+			assert.Equal(t, tt.wants.statusCode, rec.Code)
+		})
+	}
+}
 func Test_handler_InsertCake(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepository := mock_repo.NewMockRepository(ctrl)
@@ -242,8 +325,7 @@ func Test_handler_InsertCake(t *testing.T) {
 		})
 	}
 }
-
-func Test_handler_GetDetailsOfCake(t *testing.T) {
+func Test_handler_UpdateCake(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepository := mock_repo.NewMockRepository(ctrl)
 
@@ -264,23 +346,88 @@ func Test_handler_GetDetailsOfCake(t *testing.T) {
 		{
 			name: "Success",
 			args: args{
-				method: http.MethodGet,
-				path:   "/cakes",
+				method: http.MethodPatch,
+				path:   "/cakes?title=newjudul&description=newdeskripsi&rating=9.8&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
 				id:     "1",
 			},
 			wants: wants{
 				statusCode: http.StatusOK,
 			},
 			mock: func() {
-				mockRepository.EXPECT().GetDetailsOfCake(gomock.Any(), 1).
-					Return(m.Cake{Id: 1, Title: "title", Description: "description", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
+				mockRepository.EXPECT().UpdateCake(
+					gomock.Any(), m.Cake{}).
+					Return(m.Cake{Id: 1, Title: "newjudul", Description: "newdeskripsi", Rating: 9.8, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
 			},
 		},
 		{
-			name: "id not valid",
+			name: "Success with empty title",
 			args: args{
-				method: http.MethodGet,
-				path:   "/cakes",
+				method: http.MethodPatch,
+				path:   "/cakes?title=&description=newdeskripsi&rating=9.8&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusOK,
+			},
+			mock: func() {
+				mockRepository.EXPECT().UpdateCake(
+					gomock.Any(), m.Cake{}).
+					Return(m.Cake{Id: 1, Title: "newjudul", Description: "newdeskripsi", Rating: 9.8, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
+			},
+		},
+		{
+			name: "Success with empty description",
+			args: args{
+				method: http.MethodPatch,
+				path:   "/cakes?title=newjudul&description=&rating=9.8&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusOK,
+			},
+			mock: func() {
+				mockRepository.EXPECT().UpdateCake(
+					gomock.Any(), m.Cake{}).
+					Return(m.Cake{Id: 1, Title: "newjudul", Description: "newdeskripsi", Rating: 9.8, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
+			},
+		},
+		{
+			name: "Success with empty rating",
+			args: args{
+				method: http.MethodPatch,
+				path:   "/cakes?title=hello&description=newdeskripsi&rating=&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusOK,
+			},
+			mock: func() {
+				mockRepository.EXPECT().UpdateCake(
+					gomock.Any(), m.Cake{}).
+					Return(m.Cake{Id: 1, Title: "newjudul", Description: "newdeskripsi", Rating: 0, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
+			},
+		},
+		{
+			name: "Success with empty image",
+			args: args{
+				method: http.MethodPatch,
+				path:   "/cakes?title=hello&description=newdeskripsi&rating=&image=",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusOK,
+			},
+			mock: func() {
+				mockRepository.EXPECT().UpdateCake(
+					gomock.Any(), m.Cake{}).
+					Return(m.Cake{Id: 1, Title: "newjudul", Description: "newdeskripsi", Rating: 0, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, nil)
+			},
+		},
+		{
+			name: "id wrong format",
+			args: args{
+				method: http.MethodPatch,
+				path:   "/cakes?title=newjudul&description=newdeskripsi&rating=9.8&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
 				id:     "abc",
 			},
 			wants: wants{
@@ -289,25 +436,62 @@ func Test_handler_GetDetailsOfCake(t *testing.T) {
 			mock: func() {},
 		},
 		{
-			name: "repository error",
+			name: "title wrong format",
 			args: args{
-				method: http.MethodGet,
-				path:   "/cakes",
+				method: http.MethodPatch,
+				path:   "/cakes?title=#&description=newdeskripsi&rating=9.8&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusBadRequest,
+			},
+			mock: func() {},
+		},
+		{
+			name: "rating wrong format",
+			args: args{
+				method: http.MethodPatch,
+				path:   "/cakes?title=newtitle&description=newdeskripsi&rating=abc&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusBadRequest,
+			},
+			mock: func() {},
+		},
+		{
+			name: "image wrong format",
+			args: args{
+				method: http.MethodPatch,
+				path:   "/cakes?title=newtitle&description=newdeskripsi&rating=abc&image=httttps://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusBadRequest,
+			},
+			mock: func() {},
+		},
+		{
+			name: "Internal Server Error",
+			args: args{
+				method: http.MethodPatch,
+				path:   "/cakes?title=newjudul&description=newdeskripsi&rating=9.8&image=https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
 				id:     "1",
 			},
 			wants: wants{
 				statusCode: http.StatusInternalServerError,
 			},
 			mock: func() {
-				mockRepository.EXPECT().GetDetailsOfCake(gomock.Any(), 1).
-					Return(m.Cake{Id: 1, Title: "title", Description: "description", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, errors.New("Repository Error"))
+				mockRepository.EXPECT().UpdateCake(
+					gomock.Any(), m.Cake{}).
+					Return(m.Cake{Id: 1, Title: "newjudul", Description: "newdeskripsi", Rating: 9.8, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg"}, errors.New("internal server error"))
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest(tt.args.method, tt.args.path, nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
@@ -320,7 +504,92 @@ func Test_handler_GetDetailsOfCake(t *testing.T) {
 			h := &handler{
 				repository: mockRepository,
 			}
-			if err := h.GetDetailsOfCake(c); err != nil {
+			if err := h.UpdateCake(c); err != nil {
+				t.Errorf("handler.UpdateCake() error = %v", err)
+			}
+
+			assert.Equal(t, tt.wants.statusCode, rec.Code)
+		})
+	}
+}
+func Test_handler_DeleteCake(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockRepository := mock_repo.NewMockRepository(ctrl)
+
+	type args struct {
+		method string
+		path   string
+		id     string
+	}
+	type wants struct {
+		statusCode int
+	}
+	tests := []struct {
+		name  string
+		args  args
+		wants wants
+		mock  func()
+	}{
+		{
+			name: "Success",
+			args: args{
+				method: http.MethodDelete,
+				path:   "/cakes",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusOK,
+			},
+			mock: func() {
+				mockRepository.EXPECT().DeleteCake(gomock.Any(), 1).
+					Return(nil)
+			},
+		},
+		{
+			name: "id wrong format",
+			args: args{
+				method: http.MethodDelete,
+				path:   "/cakes",
+				id:     "abc",
+			},
+			wants: wants{
+				statusCode: http.StatusBadRequest,
+			},
+			mock: func() {},
+		},
+		{
+			name: "Internal Server Error",
+			args: args{
+				method: http.MethodDelete,
+				path:   "/cakes",
+				id:     "1",
+			},
+			wants: wants{
+				statusCode: http.StatusInternalServerError,
+			},
+			mock: func() {
+				mockRepository.EXPECT().DeleteCake(gomock.Any(), 1).
+					Return(errors.New("internal server error"))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := echo.New()
+			req := httptest.NewRequest(tt.args.method, tt.args.path, nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			c.SetPath("/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.args.id)
+
+			tt.mock()
+
+			h := &handler{
+				repository: mockRepository,
+			}
+			if err := h.DeleteCake(c); err != nil {
 				t.Errorf("handler.GetListOfCakes() error = %v", err)
 			}
 

@@ -2,15 +2,49 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	m "privy/models"
 	"reflect"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/golang/mock/gomock"
 )
 
+func TestNew(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	db, _, _ := sqlmock.New()
+
+	type args struct {
+		db *sql.DB
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "Success",
+			args: args{
+				db: db,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := New(tt.args.db)
+			_, ok := got.(Repository)
+			if !ok {
+				t.Errorf("Not Repository interface")
+			}
+		})
+	}
+}
 func Test_repository_GetListOfCakes(t *testing.T) {
 	ctx := context.Background()
 
@@ -112,7 +146,6 @@ func Test_repository_GetListOfCakes(t *testing.T) {
 		})
 	}
 }
-
 func Test_repository_GetDetailsOfCake(t *testing.T) {
 	ctx := context.Background()
 
@@ -178,4 +211,160 @@ func Test_repository_GetDetailsOfCake(t *testing.T) {
 		})
 	}
 }
+func Test_repository_InsertCake(t *testing.T) {
+	ctx := context.Background()
+	ct := time.Now()
+	currentTime := fmt.Sprintf("%d-%d-%d %d:%d:%d", ct.Year(), ct.Month(), ct.Day(), ct.Hour(), ct.Minute(), ct.Second())
 
+	db, sqlMock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	type args struct {
+		ctx  context.Context
+		cake m.Cake
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    m.Cake
+		wantErr bool
+		mock    func()
+	}{
+		{
+			name: "Success",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "title",
+					Description: "desc",
+					Rating:      10,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   currentTime,
+					UpdatedAt:   currentTime,
+				},
+			},
+			want:    m.Cake{Id: 1, Title: "title", Description: "desc", Rating: 10, Image: "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg", CreatedAt: currentTime, UpdatedAt: currentTime},
+			wantErr: false,
+			mock: func() {
+				query := `INSERT INTO privy_cakes`
+				sqlMock.ExpectExec(query).WillReturnResult(sqlmock.NewResult(int64(1), int64(1)))
+			},
+		},
+		{
+			name: "Query Error",
+			args: args{
+				ctx: ctx,
+				cake: m.Cake{
+					Id:          1,
+					Title:       "title",
+					Description: "desc",
+					Rating:      10,
+					Image:       "https://img.taste.com.au/ynYrqkOs/w720-h480-cfill-q80/taste/2016/11/sunny-lemon-cheesecake-102220-1.jpeg",
+					CreatedAt:   currentTime,
+					UpdatedAt:   currentTime,
+				},
+			},
+			want:    m.Cake{},
+			wantErr: true,
+			mock: func() {
+				query := `UPDATE INTO privy_cakes`
+				sqlMock.ExpectExec(query).WillReturnError(errors.New("Query Error"))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mock()
+
+			r := &repository{
+				db: db,
+			}
+			got, err := r.InsertCake(tt.args.ctx, tt.args.cake)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("repository.InsertCake() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("repository.InsertCake() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func Test_repository_DeleteCake(t *testing.T) {
+	ctx := context.Background()
+
+	db, sqlMock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	type args struct {
+		ctx context.Context
+		id  int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+		mock    func()
+	}{
+		{
+			name: "Success",
+			args: args{
+				ctx: ctx,
+				id:  1,
+			},
+			wantErr: false,
+			mock: func() {
+				sqlMock.ExpectExec(`DELETE FROM privy_cakes`).
+					WillDelayFor(time.Second).
+					WillReturnResult(sqlmock.NewResult(int64(1), int64(1)))
+			},
+		},
+		{
+			name: "Query Error",
+			args: args{
+				ctx: ctx,
+				id:  1,
+			},
+			wantErr: true,
+			mock: func() {
+				sqlMock.ExpectExec(`SELECT FROM privy_cakes`).
+					WillDelayFor(time.Second).
+					WillReturnResult(sqlmock.NewErrorResult(errors.New("Query Error")))
+			},
+		},
+		{
+			name: "No Rows Affected",
+			args: args{
+				ctx: ctx,
+				id:  1,
+			},
+			wantErr: true,
+			mock: func() {
+				sqlMock.ExpectExec(`DELETE FROM privy_cakes`).
+					WillDelayFor(time.Second).
+					WillReturnResult(sqlmock.NewResult(int64(2), int64(0)))
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mock()
+
+			r := &repository{
+				db: db,
+			}
+			err := r.DeleteCake(tt.args.ctx, tt.args.id)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("repository.DeleteCake() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}

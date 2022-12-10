@@ -32,7 +32,6 @@ func New(db *sql.DB) Repository {
 		db: db,
 	}
 }
-
 func (r *repository) GetListOfCakes(ctx context.Context, limit int, offset int) ([]m.Cake, error) {
 	var (
 		err  error
@@ -62,7 +61,6 @@ func (r *repository) GetListOfCakes(ctx context.Context, limit int, offset int) 
 		return []m.Cake{}, nil
 	}
 }
-
 func (r *repository) GetDetailsOfCake(ctx context.Context, id int) (m.Cake, error) {
 	var (
 		err  error
@@ -78,7 +76,6 @@ func (r *repository) GetDetailsOfCake(ctx context.Context, id int) (m.Cake, erro
 
 	return cake, nil
 }
-
 func (r *repository) InsertCake(ctx context.Context, cake m.Cake) (m.Cake, error) {
 	currentTime := time.Now().String()
 
@@ -89,7 +86,7 @@ func (r *repository) InsertCake(ctx context.Context, cake m.Cake) (m.Cake, error
 	rows, err := r.db.Exec(query)
 	if err != nil {
 		log.Println("[InsertCake] can't insert cake, err:", err.Error())
-		return m.Cake{}, nil
+		return m.Cake{}, err
 	}
 
 	id, _ := rows.LastInsertId()
@@ -99,7 +96,6 @@ func (r *repository) InsertCake(ctx context.Context, cake m.Cake) (m.Cake, error
 
 	return cake, nil
 }
-
 func (r *repository) UpdateCake(ctx context.Context, cake m.Cake) (m.Cake, error) {
 	var (
 		err        error
@@ -125,7 +121,7 @@ func (r *repository) UpdateCake(ctx context.Context, cake m.Cake) (m.Cake, error
 	if cake.Description == "" {
 		cake.Description = cakeTemp.Description
 	}
-	if cake.Rating == -9999.9999 {
+	if cake.Rating == 0 {
 		cake.Rating = cakeTemp.Rating
 	}
 	if cake.Image == "" {
@@ -152,7 +148,6 @@ func (r *repository) UpdateCake(ctx context.Context, cake m.Cake) (m.Cake, error
 
 	return cake, nil
 }
-
 func (r *repository) DeleteCake(ctx context.Context, id int) (err error) {
 	query := fmt.Sprintf(database.DeleteCakeByID, id)
 	rows, err := r.db.Exec(query)
@@ -164,8 +159,8 @@ func (r *repository) DeleteCake(ctx context.Context, id int) (err error) {
 	rowsAffected, _ := rows.RowsAffected()
 	if rowsAffected > 0 {
 		return nil
+	} else {
+		log.Println("[DeleteCake] can't delete cake, err:", ErrNotFound.Error())
+		return ErrNotFound
 	}
-
-	log.Println("[DeleteCake] can't delete cake, err:", ErrNotFound.Error())
-	return ErrNotFound
 }
