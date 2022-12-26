@@ -90,26 +90,60 @@ func Test_handler_GetListOfCakes(t *testing.T) {
 			},
 		},
 		{
-			name: "No offset",
+			name: "no offset",
 			args: args{
 				method: http.MethodGet,
 				path:   "/cakes?limit=10",
 			},
 			wants: wants{
-				statusCode: http.StatusBadRequest,
+				statusCode: http.StatusOK,
 			},
-			mock: func() {},
+			mock: func() {
+				mockRepository.EXPECT().GetListOfCakes(gomock.Any(), 10, 0).Return([]m.Cake{
+					{Id: 1, Title: "title"},
+				}, nil)
+			},
 		},
 		{
-			name: "No limit",
+			name: "no limit",
 			args: args{
 				method: http.MethodGet,
 				path:   "/cakes?offset=0",
 			},
 			wants: wants{
+				statusCode: http.StatusOK,
+			},
+			mock: func() {
+				mockRepository.EXPECT().GetListOfCakes(gomock.Any(), 100, 0).Return([]m.Cake{
+					{Id: 1, Title: "title"},
+				}, nil)
+			},
+		},
+		{
+			name: "limit not integer",
+			args: args{
+				method: http.MethodGet,
+				path:   "/cakes?limit=not_number&offset=0",
+			},
+			wants: wants{
 				statusCode: http.StatusBadRequest,
 			},
-			mock: func() {},
+			mock: func() {
+				return
+			},
+		},
+		{
+			name: "offset not integer",
+			args: args{
+				method: http.MethodGet,
+				path:   "/cakes?limit=100&offset=not_number",
+			},
+			wants: wants{
+				statusCode: http.StatusBadRequest,
+			},
+			mock: func() {
+				return
+			},
 		},
 	}
 	for _, tt := range tests {
