@@ -195,7 +195,7 @@ func (h *handler) DeleteCake(c echo.Context) (err error) {
 
 	err = h.repository.DeleteCake(c.Request().Context(), id)
 	if err != nil {
-		log.Println("[Delivery][DeleteCake] can't get details of cakes, err:", err.Error())
+		log.Println("[Delivery][DeleteCake] can't delete cake, err:", err.Error())
 		res := m.SetError(http.StatusInternalServerError, err.Error())
 		return c.JSON(http.StatusInternalServerError, res)
 	}
